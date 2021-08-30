@@ -2,7 +2,8 @@
 此仓库用于记录算法题的完成情况&&数据结构的学习笔记
 ***
 * 已完成：   
-  * 数据结构1——[力扣数据结构入门](https://leetcode-cn.com/study-plan/data-structures/)
+  * [力扣学习计划](https://leetcode-cn.com/study-plan/)
+      * 数据结构入门
   * 代码随想录——LeetCode 刷题攻略
       * 数组篇
       * 链表篇
