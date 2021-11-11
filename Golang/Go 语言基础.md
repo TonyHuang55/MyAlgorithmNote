@@ -117,35 +117,35 @@ func main() {
 * 通过 ``type`` 关键字进行结构(``struct``)或者接口(``interface``)的声明
 * 通过 ``func`` 关键字进行函数的声明
 
-```go
-// 当前程序的包名，package 必须放在非注释的第一行
-package main
-
-// 导入其他的包
-import (
-	"fmt"
-)
-
-// 常量的定义
-const PI = 3.14
-
-// 全局变量的声明与赋值
-var name = "gopher"
-
-// 一般类型声明
-type newType int
-
-// 结构声明
-type gopher struct{}
-
-// 接口的声明
-type golang interface {}
-
-// 由 main 函数作为程序入口点启动
-func main() {
-	fmt.Println("Hello World!你好，世界！")
-}
-```
+  ```go
+  // 当前程序的包名，package 必须放在非注释的第一行
+  package main
+  
+  // 导入其他的包
+  import (
+  	"fmt"
+  )
+  
+  // 常量的定义
+  const PI = 3.14
+  
+  // 全局变量的声明与赋值
+  var name = "gopher"
+  
+  // 一般类型声明
+  type newType int
+  
+  // 结构声明
+  type gopher struct{}
+  
+  // 接口的声明
+  type golang interface {}
+  
+  // 由 main 函数作为程序入口点启动
+  func main() {
+  	fmt.Println("Hello World!你好，世界！")
+  }
+  ```
 
 #### 导入 package
 1. 导入多个包格式
@@ -314,15 +314,15 @@ func main() {
   const a int = 1
   const b = 'A'
   const (
-  	text   = "123"
-  	length = len(text)
-  	num    = b * 20
+      text   = "123"
+      length = len(text)
+      num    = b * 20
   )
   
   // 同时定义多个常量
   const i, j, k = 1, "2", '3'
   const (
-  	text2, length2, num2 = "456", len(text2), k * 10
+      text2, length2, num2 = "456", len(text2), k * 10
   )
   ```
 
@@ -377,3 +377,148 @@ Go 中的运算符均是从左至右结合
 |5|<- : 并发中专门用于 channel|
 |6|&& : A && B 结果为真要求：A、B 都为真，如果 A 为假，则不计算 B(短路)|
 |7|\|\| : A\|\|B 运算结果为假要求：A，B 都为假，如果 A 为真，则不计算 B(短路)|
+
+## 05 控制语句
+### 指针
+Go 虽然保留了指针，但是与其他编程语言不同的是，在 Go 中不支持指针运算以及 "->" 运算符。而直接采用 " . " 选择符来操作指针目标对象的成员
+* 操作符 " & " 取变量地址，使用 " * " 通过指针间接访问目标对象
+* 默认值为 nil 而非 NULL
+
+   ```go
+   func main() {
+       a := 1
+       p := &a
+       fmt.Println(p)      // 0xc000012088
+       fmt.Println(*p)     // 1
+   }
+   ```
+
+### 递增递减语句
+在 Go 当中，``++`` 和 ``--`` 是作为语句而非表达式
+
+### 判断语句 if
+* 条件表达式没有括号
+* 支持一个初始化表达式(可以是并行方式)
+    * if 语句中初始化的变量作用域仅限于 if 语句内
+    * 初始化语句中的变量为 block 级别，同时隐藏外部同名变量
+      ```go
+      func main() {
+          a := 10
+          if a := 1; a > 0 {
+          	fmt.Println(a)  // 1
+          }
+          fmt.Println(a)      // 10
+      }
+      ```
+* 左大括号必须和条件语句或 else 在同一行
+* 支持单行模式
+
+### 循环语句 for
+* 只有 for 一个循环语句关键字，支持 3 种形式
+   ```go
+   func main() {
+       a := 1
+       for {
+           a++
+           if a > 3 {
+               break
+           }
+           fmt.Println(a)
+       }
+       fmt.Println("Over")
+   }
+   ```
+   
+   ```go
+   func main() {
+       a := 1
+       for a <= 3 {
+           a++
+           fmt.Println(a)
+       }
+       fmt.Println("Over")
+   }
+   ```
+   
+   ```go
+   func main() {
+       a := 1
+       for i := 0; i < 3; i++ {
+           a++
+           fmt.Println(a)
+       }
+       fmt.Println("Over")
+   }
+   ```
+* 初始化和步进表达式可以使多个值
+* 条件语句每次循环都会被重新检查
+    * 不建议在条件语句中使用函数，尽量提前计算好条件并以变量或常量替代
+* 左大括号必须和条件语句在同一行
+
+### 选择语句 switch
+* 可以使用任何类型或表达式作为条件语句
+* 不需要写 break，一旦条件符合自动终止
+* 如希望继续执行下一个 case ，需要使用 fallthrough 语句
+* 支持一个初始化表达式(可以使并行方式)，右侧需要跟分号
+* 左大括号必须和条件语句在同一行
+   ```go
+   func main() {
+       a := 1
+       switch a {
+       case 0:
+           fmt.Println("a = 0")
+       case 1:
+           fmt.Println("a = 1")
+       default:
+           fmt.Println("None")
+       }
+       fmt.Println(a)
+   }
+   ```
+   
+   ```go
+   func main() {
+       a := 1
+       switch {
+       case a >= 0:
+           fmt.Println("a >= 0")
+           fallthrough
+       case a >= 1:
+           fmt.Println("a >= 1")
+       }
+       fmt.Println(a)
+   }
+   ```
+   
+   ```go
+   func main() {
+       switch a := 1; {
+       case a >= 0:
+           fmt.Println("a >= 0")
+           fallthrough
+       case a >= 1:
+           fmt.Println("a >= 1")
+       }
+   }
+   ```
+
+### 跳转语句 goto、break、continue
+* 三个语法都可以配合标签使用
+* 标签名区分大小写，若不使用会造成编译错误
+* break 与 continue 配合标签可用于多层循环的跳出
+* goto 是调整执行位置，与其他 2 个语句配合标签的结果并不相同
+    * 建议将与 goto 一起使用的标签放在 goto 之后，保证程序完整性、避免死循环 
+   ```go
+   func main() {
+   LABEL:
+       for {
+           for i := 0; i < 10; i++ {
+               if i > 2 {
+                   break LABEL
+               } else {
+                   fmt.Println(i)
+               }
+           }
+       }
+   }
+   ```
