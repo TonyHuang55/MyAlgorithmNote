@@ -522,3 +522,40 @@ Go 虽然保留了指针，但是与其他编程语言不同的是，在 Go 中�
        }
    }
    ```
+  
+## 06 数组 Array
+
+### 数组的概念及注意事项
+* 定义数组的格式：``var <arrayName> [n]<type>``
+    * 为数组赋初值时可以使用形如 ``array := [20]int{19:1}`` 的语句通过索引指定初值
+    * 定义数组时数组长度的参数可以用 ``[...]`` 代替，此时数组的长度按照所赋初值分配
+* 数组的长度也是类型的一部分，因此具有不同长度的数组为不同类型
+* 注意区分指向数组的指针与指针数组
+* 数组在 Go 中为值类型 (其他语言多用引用类型)
+* 数组直接可以使用 ``==`` 或 ``!=`` 进行比较，但不可以用 ``<`` 或 ``>``
+* 可以使用 new 来创建数组，此方法返回一个指向数组的指针
+* Go 支持多维数组
+
+### Go 语言的冒泡排序演示
+```go
+package main
+
+import "fmt"
+
+func main() {
+    array := [...]int{5, 2, 6, 3, 9}
+    fmt.Println(array)
+
+    arrayLen := len(array)
+    for i := 0; i < arrayLen; i++ {
+        for j := i + 1; j < arrayLen; j++ {
+            if array[i] < array[j] {
+                tmp := array[i]
+                array[i] = array[j]
+                array[j] = tmp
+            }
+        }
+    }
+    fmt.Println(array)
+}
+```
