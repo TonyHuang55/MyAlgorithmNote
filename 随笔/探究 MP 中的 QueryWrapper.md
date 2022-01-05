@@ -5,7 +5,65 @@
 ## 2 工具类编写的心路历程
 将查询条件分为 3 大类：normal、having、orderBy
 ### normal
+大部分输入的参数都在这里进行拼接，如：eq、lt、gt、like、between 等。这些参数存储在 wrapper 的 expression 下的 normal 域里。
 
+![](pic/MP_normal参数.JPG)
+
+如上图所示，在 wrapper 中我加入了两个 EQ 参数，分别是 1 和 “2”，而 normal 这个 list 中存储参数的方式并非连续存储，而是已经为我们进行拼接：索引 0 的位置是字段信息，索引 1 存储关键字 EQ ，索引 2 存储填入的查询条件关键字，以此类推。
+
+当有多个条件时，会自动为我们拼接上 AND 关键字，他也占 list 的一席之地。通俗地说，我们输入的查询关键字所在的索引即为：index = 2 + (n - 1) * 4 (n 为查询关键字的键入顺序)。
+
+下面展示获取 normal list 中参数的例程：
+
+```java
+private static void getNormalParams(Map<Object, Integer> paramMap, AbstractWrapper wrapper) {
+    // 获取 wrapper 中 expression 下 normal 中的关键字列表
+    NormalSegmentList normalList = wrapper.getExpression().getNormal();
+
+    for (ISqlSegment iSqlSegment : normalList) {
+        /*
+         * 形如 EQ、IN 等 sql 关键字无法通过 getSqlSegment 转换，需要抓住异常
+         * 最终 ParamNameValuePairs 中只有输入的查询条件参数
+         */
+        try {
+            // 将 normal list 中的查询条件存入 wrapper 的 ParamNameValuePairs 中
+            iSqlSegment.getSqlSegment();
+        } catch (MybatisPlusException mybatisPlusException) {
+            continue;
+        }
+
+    }
+
+    for (Object key : wrapper.getParamNameValuePairs().keySet()) {
+        // 获取 ParamNameValuePairs 中的 value
+        Object curValue = wrapper.getParamNameValuePairs().get(key);
+        paramMap.put(curValue, paramMap.getOrDefault(curValue, 0) + 1);
+    }
+    // 重置 map，避免重复调用重复获取
+    wrapper.getParamNameValuePairs().clear();
+}
+```
+
+上述例程大体上分为 3 步：
+1. 遍历 normalList ，将需要验证的查询条件导入到 ParamNameValuePairs 中
+2. 遍历 ParamNameValuePairs ，获取键值对的值，存入一个 map 中用于后续比较
+    * 该 map 的 key 是查询条件关键字，value 是关键字出现的次数，防止关键字重复无法正确判别的情况
+3. 重置、清空 ParamNameValuePairs
+
+第一步很好理解，通过先前对 normalList 的分析我们知道，要获取其中的查询关键字只要按推导出的下标公式顺序获取即可。这里用了另一种方法，即使用一个 try - catch 将 normalList 中所有内容都导入 ParamNameValuePairs 里去。
+
+完成此步骤后，此时 ParamNameValuePairs 中的内容如下图所示：
+
+![](pic/MP_paramNameValuePairs.JPG)
+
+可以看到键值对的 key 是 MP 拼接 “MPGENVAL” 和一个 AtomicInteger 而成的，而 value 则是我们需要的查询关键字。
+
+第二步其实就是记录下这些键值对的值用于后续比较，存储的 map 即是我们得到的实际结果。
+
+第三步需要注意的是，尽管我们清空了 paramNameValuePairs ，但是 AtomicInteger 还是保持原有的计数。也就是说下一次为 wrapper 填入查询关键字且导入 paramNameValuePairs 中时，拼接的 key 是接着计数的，而非归 ”1“ 。本例中会从 3 开始继续计数。
+
+
+***
 ```java
 public class QueryWrapperParamCheckUtil {
     /**
