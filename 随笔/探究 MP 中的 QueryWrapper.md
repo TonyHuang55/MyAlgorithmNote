@@ -1,18 +1,25 @@
 # 探究 MP 中的 QueryMapper
-## 1 探究原因
-在对 MP 中填入各种 eq、oederBy 等查询条件时，QueryMapper 中会存储这些关键字信息。在一次编写单元测试想对其进行校验时，我花费一番功夫阅读了 MP 中相关源码，自行编写了一个简单的工具类。其功能是取出 QueryMapper 中的真实关键字进行判断、对比，而非带有形如 "MPGENVAL" 关键字的 MP 自动拼接的 sql 语句。
+## 1 留档原因
+在对 MP 中填入各种 EQ、OEDERBY 等查询条件时，QueryMapper 中会存储这些关键字信息。在一次编写单元测试想对其进行校验时，我花费一番功夫阅读了 MP 中相关源码，自行编写了一个简单的工具类。其功能是取出 QueryMapper 中的真实关键字进行判断、对比，而非带有形如 "MPGENVAL" 关键字的 MP 自动拼接的 sql 语句。
 
-## 2 工具类编写的心路历程
-将查询条件分为 3 大类：normal、having、orderBy
-### normal
-大部分输入的参数都在这里进行拼接，如：eq、lt、gt、like、between 等。这些参数存储在 wrapper 的 expression 下的 normal 域里。
+这是我第一次阅读开源框架源码，有不小的收获，故留档。
+
+## 2 心路历程
+工具类中将查询条件分为 3 大类：normal、having、orderBy。
+
+### 2.1 normal
+#### 2.1.1 normal 中是怎么存储关键字的？
+大部分输入的参数都在这里进行拼接，如：EQ、LT、GT、LIKE、BETWEEN 等。这些参数存储在 wrapper 的 expression 下的 normal 域里。
 
 ![](pic/MP_normal参数.JPG)
 
 如上图所示，在 wrapper 中我加入了两个 EQ 参数，分别是 1 和 “2”，而 normal 这个 list 中存储参数的方式并非连续存储，而是已经为我们进行拼接：索引 0 的位置是字段信息，索引 1 存储关键字 EQ ，索引 2 存储填入的查询条件关键字，以此类推。
 
-当有多个条件时，会自动为我们拼接上 AND 关键字，他也占 list 的一席之地。通俗地说，我们输入的查询关键字所在的索引即为：index = 2 + (n - 1) * 4 (n 为查询关键字的键入顺序)。
+当有多个条件时，会自动为我们拼接上 AND 关键字，他也占 list 的一席之地。通俗地说，我们输入的查询关键字所在的索引即为：
 
+![](pic/MP_索引通项公式.png)
+
+#### 2.1.2 normal param check 例程
 下面展示获取 normal list 中参数的例程：
 
 ```java
@@ -50,6 +57,7 @@ private static void getNormalParams(Map<Object, Integer> paramMap, AbstractWrapp
     * 该 map 的 key 是查询条件关键字，value 是关键字出现的次数，防止关键字重复无法正确判别的情况
 3. 重置、清空 ParamNameValuePairs
 
+##### 2.1.2.1 step 1
 第一步很好理解，通过先前对 normalList 的分析我们知道，要获取其中的查询关键字只要按推导出的下标公式顺序获取即可。这里用了另一种方法，即使用一个 try - catch 将 normalList 中所有内容都导入 ParamNameValuePairs 里去。
 
 完成此步骤后，此时 ParamNameValuePairs 中的内容如下图所示：
@@ -58,11 +66,53 @@ private static void getNormalParams(Map<Object, Integer> paramMap, AbstractWrapp
 
 可以看到键值对的 key 是 MP 拼接 “MPGENVAL” 和一个 AtomicInteger 而成的，而 value 则是我们需要的查询关键字。
 
+##### 2.1.2.2 step 2
 第二步其实就是记录下这些键值对的值用于后续比较，存储的 map 即是我们得到的实际结果。
 
+##### 2.1.2.3 step 3
 第三步需要注意的是，尽管我们清空了 paramNameValuePairs ，但是 AtomicInteger 还是保持原有的计数。也就是说下一次为 wrapper 填入查询关键字且导入 paramNameValuePairs 中时，拼接的 key 是接着计数的，而非归 ”1“ 。本例中会从 3 开始继续计数。
 
+#### 2.2.3 探究 MP 中添加查询关键字的源码
+以 EQ 为例：
 
+首先 AbstractWrapper 中实现了 Compare 接口，其中的 EQ 方法如下：
+
+```java
+public interface Compare<Children, R> extends Serializable {
+    default Children eq(R column, Object val) {
+        return eq(true, column, val);
+    }
+
+    /**
+     * 等于 =
+     *
+     * @param condition 执行条件
+     * @param column    字段
+     * @param val       值
+     * @return children
+     */
+    Children eq(boolean condition, R column, Object val);
+
+}
+```
+
+我们在实际业务中其实也会遇到相关的情况，比如：查询关键字是空。这时候可以省去 ifelse 写法而是用带有 condition 的 eq 进行参数添加，使代码更简洁。
+
+```java
+// 1、if 写法
+if(keyword != null){
+    queryWrapper.eq(column, keyword);
+}
+
+// 2、带 condition 的 eq 方法
+queryWrapper.eq(keyword != null,column, keyword);
+```
+
+### 2.2 having
+
+
+
+## total
 ***
 ```java
 public class QueryWrapperParamCheckUtil {
