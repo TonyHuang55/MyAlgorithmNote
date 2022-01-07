@@ -108,6 +108,99 @@ if(keyword != null){
 queryWrapper.eq(keyword != null,column, keyword);
 ```
 
+再来看 AbstractWrapper 中的 eq 方法：
+
+```java
+public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, R, Children>> extends Wrapper<T>
+    implements Compare<Children, R>, Nested<Children, Children>, Join<Children>, Func<Children, R> {
+    
+    @Override
+    public Children eq(boolean condition, R column, Object val) {
+        return addCondition(condition, column, EQ, val);
+    }
+    
+    /**
+     * 普通查询条件
+     *
+     * @param condition  是否执行
+     * @param column     属性
+     * @param sqlKeyword SQL 关键词
+     * @param val        条件值
+     */
+    protected Children addCondition(boolean condition, R column, SqlKeyword sqlKeyword, Object val) {
+        // 本例中加入三个参数
+        return doIt(condition, () -> columnToString(column), sqlKeyword, () -> formatSql("{0}", val));
+    }
+
+    /**
+     * 对sql片段进行组装
+     *
+     * @param condition   是否执行
+     * @param sqlSegments sql片段数组
+     * @return children
+     */
+    protected Children doIt(boolean condition, ISqlSegment... sqlSegments) {
+        if (condition) {
+            expression.add(sqlSegments);
+        }
+        return typedThis;
+    }
+    
+    /**
+     * 获取 columnName
+     */
+    protected String columnToString(R column) {
+        // 列名直接 toString 即可
+        return (String) column;
+    }
+
+    /**
+     * 格式化SQL
+     *
+     * @param sqlStr SQL语句部分
+     * @param params 参数集
+     * @return sql
+     */
+    protected final String formatSql(String sqlStr, Object... params) {
+        return formatSqlIfNeed(true, sqlStr, params);
+    }
+    
+    /**
+     * 
+     * 根据需要格式化SQL
+     *
+     * @param need   是否需要格式化
+     * @param sqlStr SQL语句部分
+     * @param params 参数集
+     * @return sql
+     */
+    protected final String formatSqlIfNeed(boolean need, String sqlStr, Object... params) {
+        if (!need || StringUtils.isBlank(sqlStr)) {
+            return null;
+        }
+        if (ArrayUtils.isNotEmpty(params)) {
+            for (int i = 0; i < params.length; ++i) {
+                // genParamName 就是 MP 为我们提供的 ’MPGENVAL‘ 拼接 AtomicInteger 得到的键
+                String genParamName = Constants.WRAPPER_PARAM + paramNameSeq.incrementAndGet();
+                // 待拼接的占位符需要用 AtomicInteger 计数替代而非永远是 {0}
+                sqlStr = sqlStr.replace(String.format("{%s}", i),
+                    String.format(Constants.WRAPPER_PARAM_FORMAT, Constants.WRAPPER, genParamName));
+                paramNameValuePairs.put(genParamName, params[i]);
+            }
+        }
+        return sqlStr;
+    }
+
+}
+```
+
+eq 方法中调用 addCondition，addCondition 调用 doIt，doIt 中会拼上 3 个 sqlSegment，分别为：
+* 字段名
+* '=' 
+    * (MP 枚举类 SqlKeyword 中定义了 EQ 即 ’=‘)
+* '#{ew.paramNameValuePairs.MPGENVAL1}'
+
+
 ### 2.2 having
 
 
