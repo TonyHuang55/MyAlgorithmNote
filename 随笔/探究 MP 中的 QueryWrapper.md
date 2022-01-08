@@ -72,9 +72,10 @@ private static void getNormalParams(Map<Object, Integer> paramMap, AbstractWrapp
 ##### 2.1.2.3 step 3
 第三步需要注意的是，尽管我们清空了 paramNameValuePairs ，但是 AtomicInteger 还是保持原有的计数。也就是说下一次为 wrapper 填入查询关键字且导入 paramNameValuePairs 中时，拼接的 key 是接着计数的，而非归 ”1“ 。本例中会从 3 开始继续计数。
 
-#### 2.2.3 探究 MP 中添加查询关键字的源码
+#### 2.1.3 探究 MP 中添加查询关键字的源码
 以 EQ 为例：
 
+##### 2.1.3.1 Compare 接口的 eq 方法
 首先 AbstractWrapper 中实现了 Compare 接口，其中的 EQ 方法如下：
 
 ```java
@@ -108,52 +109,70 @@ if(keyword != null){
 queryWrapper.eq(keyword != null,column, keyword);
 ```
 
-再来看 AbstractWrapper 中的 eq 方法：
+##### 2.1.3.2 AbstractWrapper 重写的 eq 方法
+再来看 AbstractWrapper 中重写的 eq 方法：
 
 ```java
-public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, R, Children>> extends Wrapper<T>
-    implements Compare<Children, R>, Nested<Children, Children>, Join<Children>, Func<Children, R> {
-    
-    @Override
-    public Children eq(boolean condition, R column, Object val) {
-        return addCondition(condition, column, EQ, val);
-    }
-    
-    /**
-     * 普通查询条件
-     *
-     * @param condition  是否执行
-     * @param column     属性
-     * @param sqlKeyword SQL 关键词
-     * @param val        条件值
-     */
-    protected Children addCondition(boolean condition, R column, SqlKeyword sqlKeyword, Object val) {
-        // 本例中加入三个参数
-        return doIt(condition, () -> columnToString(column), sqlKeyword, () -> formatSql("{0}", val));
-    }
+public Children eq(boolean condition, R column, Object val) {
+    return addCondition(condition, column, EQ, val);
+}
+```
 
-    /**
-     * 对sql片段进行组装
-     *
-     * @param condition   是否执行
-     * @param sqlSegments sql片段数组
-     * @return children
-     */
-    protected Children doIt(boolean condition, ISqlSegment... sqlSegments) {
-        if (condition) {
-            expression.add(sqlSegments);
-        }
-        return typedThis;
+eq 方法中调用 addCondition
+```java
+/**
+ * 普通查询条件
+ *
+ * @param condition  是否执行
+ * @param column     属性
+ * @param sqlKeyword SQL 关键词
+ * @param val        条件值
+ */
+protected Children addCondition(boolean condition, R column, SqlKeyword sqlKeyword, Object val) {
+    return doIt(condition, () -> columnToString(column), sqlKeyword, () -> formatSql("{0}", val));
+}
+
+/**
+ * 对sql片段进行组装
+ *
+ * @param condition   是否执行
+ * @param sqlSegments sql片段数组
+ * @return children
+ */
+protected Children doIt(boolean condition, ISqlSegment... sqlSegments) {
+    if (condition) {
+        expression.add(sqlSegments);
     }
-    
+    return typedThis;
+}
+```
+
+##### 2.1.3.3 doIt 中加入的 sqlSegment 详解
+addCondition 调用 doIt，doIt 中会拼上 3 个 sqlSegment，分别为：
+* ``() -> columnToString(column)``
+    * 即字段名
+    ```java
     /**
      * 获取 columnName
      */
     protected String columnToString(R column) {
-        // 列名直接 toString 即可
         return (String) column;
     }
-
+    ```
+* ``sqlKeyword``
+    * 即 ‘=’
+    ```java
+    public enum SqlKeyword implements ISqlSegment {
+        EQ(StringPool.EQUALS)
+    }
+    
+    public interface StringPool {
+        String EQUALS = "=";
+    }
+    ```
+* ``() -> formatSql("{0}", val)``
+    * ``#{ew.paramNameValuePairs.MPGENVAL1}``
+    ```java
     /**
      * 格式化SQL
      *
@@ -166,8 +185,7 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
     }
     
     /**
-     * 
-     * 根据需要格式化SQL
+     * 根据需要格式化SQL<br>
      *
      * @param need   是否需要格式化
      * @param sqlStr SQL语句部分
@@ -180,9 +198,12 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
         }
         if (ArrayUtils.isNotEmpty(params)) {
             for (int i = 0; i < params.length; ++i) {
-                // genParamName 就是 MP 为我们提供的 ’MPGENVAL‘ 拼接 AtomicInteger 得到的键
+                // 将查询条件插入 paramNameValuePairs
+                // 键 => MPGENVAL 拼接 AtomicInteger 计数
+                // 值 => 查询条件
                 String genParamName = Constants.WRAPPER_PARAM + paramNameSeq.incrementAndGet();
-                // 待拼接的占位符需要用 AtomicInteger 计数替代而非永远是 {0}
+                // replace之前为：{0}
+                // replace之后为：#{ew.paramNameValuePairs.MPGENVAL1}
                 sqlStr = sqlStr.replace(String.format("{%s}", i),
                     String.format(Constants.WRAPPER_PARAM_FORMAT, Constants.WRAPPER, genParamName));
                 paramNameValuePairs.put(genParamName, params[i]);
@@ -190,19 +211,44 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
         }
         return sqlStr;
     }
+    ```
 
+doIt 中调用 MergeSegments 的 add 方法：
+```java
+/**
+ * 对sql片段进行组装
+ *
+ * @param condition   是否执行
+ * @param sqlSegments sql片段数组
+ * @return children
+ */
+protected Children doIt(boolean condition, ISqlSegment... sqlSegments) {
+    if (condition) {
+        expression.add(sqlSegments);
+    }
+    return typedThis;
 }
 ```
 
-eq 方法中调用 addCondition，addCondition 调用 doIt，doIt 中会拼上 3 个 sqlSegment，分别为：
-* 字段名
-* '=' 
-    * (MP 枚举类 SqlKeyword 中定义了 EQ 即 ’=‘)
-* '#{ew.paramNameValuePairs.MPGENVAL1}'
-
+```java
+public void add(ISqlSegment... iSqlSegments) {
+    List<ISqlSegment> list = Arrays.asList(iSqlSegments);
+    ISqlSegment firstSqlSegment = list.get(0);
+    // 判断查询关键字是 orderBy、groupBy、having 还是 normal
+    if (MatchSegment.ORDER_BY.match(firstSqlSegment)) {
+        orderBy.addAll(list);
+    } else if (MatchSegment.GROUP_BY.match(firstSqlSegment)) {
+        groupBy.addAll(list);
+    } else if (MatchSegment.HAVING.match(firstSqlSegment)) {
+        having.addAll(list);
+    } else {
+        normal.addAll(list);
+    }
+    cacheSqlSegment = false;
+}
+```
 
 ### 2.2 having
-
 
 
 ## total
