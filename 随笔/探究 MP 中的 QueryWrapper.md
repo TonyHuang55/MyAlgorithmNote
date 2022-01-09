@@ -5,7 +5,7 @@
 这是我第一次阅读开源框架源码，有不小的收获，故留档。
 
 ## 2 心路历程
-工具类中将查询条件分为 3 大类：normal、having、orderBy。
+工具类中将查询条件分为 4 大类：normal、having、orderBy、lastSql。
 
 ### 2.1 normal
 #### 2.1.1 normal 中是怎么存储关键字的？
@@ -20,7 +20,7 @@
 ![](pic/MP_索引通项公式.png)
 
 #### 2.1.2 normal param check 例程
-下面展示获取 normal list 中参数的例程：
+下面展示获取 normalList 中参数的例程：
 
 ```java
 private static void getNormalParams(Map<Object, Integer> paramMap, AbstractWrapper wrapper) {
@@ -33,7 +33,7 @@ private static void getNormalParams(Map<Object, Integer> paramMap, AbstractWrapp
          * 最终 ParamNameValuePairs 中只有输入的查询条件参数
          */
         try {
-            // 将 normal list 中的查询条件存入 wrapper 的 ParamNameValuePairs 中
+            // 将 normalList 中的查询条件存入 wrapper 的 ParamNameValuePairs 中
             iSqlSegment.getSqlSegment();
         } catch (MybatisPlusException mybatisPlusException) {
             continue;
@@ -249,9 +249,51 @@ public void add(ISqlSegment... iSqlSegments) {
 ```
 
 ### 2.2 having
+添加 having 的参数的写法有静态、动态两种方式，如下所示：
 
+```java
+wrapper.having("a + b < 10", TestA.class);
+wrapper.having("a + {0} < 10", 111, TestA.class);
+```
 
-## total
+插入到 havingList 中的情形如下：
+
+![](pic/MP_having示例.JPG)
+
+存入方法与 normal 参数放入的方式类似。
+
+### 2.3 last
+MP 官方对 last 方法的解释是这样的：
+
+    无视优化规则直接拼接到 sql 的最后(有sql注入的风险,请谨慎使用)
+    注意只能调用一次,多次调用以最后一次为准
+
+AbstractWrapper 中重写的 last 方法如下所示：其实就是通过直接拼接空格 + lastSql 实现的。
+
+```java
+@Override
+public Children last(boolean condition, String lastSql) {
+    if (condition) {
+        this.lastSql.setStringValue(StringPool.SPACE + lastSql);
+    }
+    return typedThis;
+}
+```
+
+而工具类中判断的方式也比较直接：即直接判断 lastSql 的出现的索引。
+
+```java
+public static boolean lastSQLCheck(String lastSQL, Wrapper<?> wrapper) {
+    AbstractWrapper wp = (AbstractWrapper) wrapper;
+    String sqlSegment = wp.getSqlSegment();
+    // 重置 map，避免重复调用重复获取
+    wp.getParamNameValuePairs().clear();
+    return sqlSegment.indexOf(lastSQL) == sqlSegment.length() - lastSQL.length();
+}
+```
+
+## 3 Summary
+**注：以下例程仅用作学习，无法实际使用，也没有实际工程意义**
 ***
 ```java
 public class QueryWrapperParamCheckUtil {
