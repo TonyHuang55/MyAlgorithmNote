@@ -61,6 +61,7 @@ int insert(T entity);
 
 BaseMapper 接口中 insert 方法返回值是**数据库受影响的行数**。
 
+#### @TableId
 若插入对象的某一属性在数据库中是自增的，那么插入的时候无需赋初值，需要在该属性添加``@TableId(type = IdType.AUTO)``注解，此时 insert SQL 语句也不会再拼接该字段。
 
 ``@TableId``注解的源码如下：
@@ -130,3 +131,14 @@ public enum IdType {
 
 插入完成后，通过 get 方法可以获取到自增的该属性。
 
+#### @TableField
+``@TableField`` 注解常用于以下情况：
+1. 对象中的属性名和字段名不一致(非驼峰)
+    * 在 value 属性指定数据库表中的字段名
+    * ``@TableField(value = "column_name")``
+2. 对象中属性字段在表中不存在
+    * 在 exist 属性指定该属性在数据库表中不存在
+    * ``@TableField(exist = false)``
+3. 对象中属性是敏感字段，不希望在查询时展示
+    * 在 select 属性指定不返回该字段的查询结果
+    * ``@TableField(select = false)``
