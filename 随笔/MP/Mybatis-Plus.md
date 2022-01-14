@@ -142,3 +142,25 @@ public enum IdType {
 3. 对象中属性是敏感字段，不希望在查询时展示
     * 在 select 属性指定不返回该字段的查询结果
     * ``@TableField(select = false)``
+    
+### Update
+#### UpdateById
+```java
+int updateById(@Param(Constants.ENTITY) T entity);
+```
+
+update 语句中只会拼接需要更新的字段，该方法的返回值依然是**数据库受影响的行数**。
+
+#### 根据条件更新
+```java
+int update(@Param(Constants.ENTITY) T entity, @Param(Constants.WRAPPER) Wrapper<T> updateWrapper);
+```
+
+入参需要定义一个 wrapper 作为更新条件。
+* QueryWrapper
+    * eg:``queryWrapper.eq("column_name",val);``
+* UpdateWrapper 
+    * 比 QueryWrapper 多了一个 ``set`` 方法
+    * eg:``updateWrapper.set("column_name",val);``
+    
+**注意：这里的 ``column_name`` 都是数据库中的字段名，而非实体中的属性名。**
