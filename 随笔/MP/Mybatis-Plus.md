@@ -142,7 +142,7 @@ public enum IdType {
 3. 对象中属性是敏感字段，不希望在查询时展示
     * 在 select 属性指定不返回该字段的查询结果
     * ``@TableField(select = false)``
-    
+
 ### Update
 #### UpdateById
 ```java
@@ -164,3 +164,34 @@ int update(@Param(Constants.ENTITY) T entity, @Param(Constants.WRAPPER) Wrapper<
     * eg:``updateWrapper.set("column_name",val);``
     
 **注意：这里的 ``column_name`` 都是数据库中的字段名，而非实体中的属性名。**
+
+### Delete
+#### DeleteById
+```java
+int deleteById(Serializable id);
+```
+
+执行的 Sql 其实就是 ``DELETE FROM table_name WHERE id = ?`` 。
+
+#### DeleteByMap
+```
+int deleteByMap(@Param(Constants.COLUMN_MAP) Map<String, Object> columnMap);
+```
+
+用一个 Map 封装删除的条件，Map 中键值对的 key 是 ``column_name``，value 是筛选的内容。多个条件之间为 ``and`` 连接。
+
+#### Delete
+```java
+int delete(@Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
+```
+
+QueryWrapper 也可以在构造入参处填入一个定义删除条件的对象去使用：
+
+```java
+TestClass delConditionObject = new TestClass();
+delConditionObject.setColumn1(val1);
+delConditionObject.setColumn2(val2);
+
+// 这个 wrapper 的条件就是 column1 = val1 AND column2 = val2
+QueryWrapper<TestClass> wrapper = new QueryWrapper<>(TestClass);
+```
