@@ -193,5 +193,18 @@ delConditionObject.setColumn1(val1);
 delConditionObject.setColumn2(val2);
 
 // 这个 wrapper 的条件就是 column1 = val1 AND column2 = val2
+// 建议使用该写法
 QueryWrapper<TestClass> wrapper = new QueryWrapper<>(TestClass);
+```
+
+#### DeleteBatchIds
+```java
+int deleteBatchIds(@Param(Constants.COLLECTION) Collection<? extends Serializable> idList);
+```
+传递一个 id 的集合，执行的 Sql 即：``DELETE FROM table_name WHERE id IN (array)``
+
+### Select
+#### SelectById
+```java
+T selectById(Serializable id);
 ```
