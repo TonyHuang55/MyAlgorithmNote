@@ -208,3 +208,40 @@ int deleteBatchIds(@Param(Constants.COLLECTION) Collection<? extends Serializabl
 ```java
 T selectById(Serializable id);
 ```
+
+#### SelectBatchIds
+```java
+List<T> selectBatchIds(@Param(Constants.COLLECTION) Collection<? extends Serializable> idList);
+```
+
+当入参的集合中有不存在的 id 时候，查询只会显示存在的结果。
+
+#### SelectOne
+```java
+T selectOne(@Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
+```
+
+如果调用该方法查询的结果大于 1 条，那么该方法会抛出异常。故需保证入参的查询条件只能查询到 ≤ 1 条结果。
+
+#### SelectCount
+```java
+Integer selectCount(@Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
+```
+
+该方法用于查询数据条目数，执行的 Sql 为：``SELECT COUNT(1) FROM table_name WHERE condition``
+
+#### SelectList
+```java
+List<T> selectList(@Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
+```
+
+#### SelectPage
+```java
+<E extends IPage<T>> E selectPage(E page, @Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
+```
+
+分页查询需要配置分页插件，方法如下：
+1. 定义一个配置类(打上 ``@Configuration`` 注解)
+2. 定义拦截器 ``PaginationInterceptor``，打上 ``@Bean`` 注解。
+
+IPage 有一个实现类 Page，该方法返回的结果可以进一步获取到总条数、总页数、当前页数等信息。
