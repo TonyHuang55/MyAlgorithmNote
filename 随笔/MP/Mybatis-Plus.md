@@ -245,3 +245,74 @@ List<T> selectList(@Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
 2. 定义拦截器 ``PaginationInterceptor``，打上 ``@Bean`` 注解。
 
 IPage 有一个实现类 Page，该方法返回的结果可以进一步获取到总条数、总页数、当前页数等信息。
+
+### MP 中 Sql 注入的原理
+在 MP 中，ISqlInjector 负责 Sql 注入工作
+
+```java
+public interface ISqlInjector {
+
+    /**
+     * 检查SQL是否注入(已经注入过不再注入)
+     *
+     * @param builderAssistant mapper 信息
+     * @param mapperClass      mapper 接口的 class 对象
+     */
+    void inspectInject(MapperBuilderAssistant builderAssistant, Class<?> mapperClass);
+}
+```
+
+在它的具体实现类 AbstractSqlInjector 中重写了上述方法
+
+```java
+@Override
+public void inspectInject(MapperBuilderAssistant builderAssistant, Class<?> mapperClass) {
+    Class<?> modelClass = extractModelClass(mapperClass);
+    if (modelClass != null) {
+        String className = mapperClass.toString();
+        Set<String> mapperRegistryCache = GlobalConfigUtils.getMapperRegistryCache(builderAssistant.getConfiguration());
+        if (!mapperRegistryCache.contains(className)) {
+            List<AbstractMethod> methodList = this.getMethodList(mapperClass);
+            if (CollectionUtils.isNotEmpty(methodList)) {
+                TableInfo tableInfo = TableInfoHelper.initTableInfo(builderAssistant, modelClass);
+                // 循环注入自定义方法
+                methodList.forEach(m -> m.inject(builderAssistant, mapperClass, modelClass, tableInfo));
+            } else {
+                logger.debug(mapperClass.toString() + ", No effective injection method was found.");
+            }
+            mapperRegistryCache.add(className);
+        }
+    }
+}
+```
+
+该方法在流中使用 ``inject`` 方法循环注入自定义方法，而 ``inject`` 方法又调用了如下抽象方法：
+
+```java
+/**
+ * 注入自定义 MappedStatement
+ *
+ * @param mapperClass mapper 接口
+ * @param modelClass  mapper 泛型
+ * @param tableInfo   数据库表反射信息
+ * @return MappedStatement
+ */
+public abstract MappedStatement injectMappedStatement(Class<?> mapperClass, Class<?> modelClass, TableInfo tableInfo);
+```
+
+各种 CRUD 操作正是实现了该抽象方法，以 ``SelectById`` 为例：
+
+```java
+public class SelectById extends AbstractMethod {
+
+    @Override
+    public MappedStatement injectMappedStatement(Class<?> mapperClass, Class<?> modelClass, TableInfo tableInfo) {
+        SqlMethod sqlMethod = SqlMethod.SELECT_BY_ID;
+        SqlSource sqlSource = new RawSqlSource(configuration, String.format(sqlMethod.getSql(),
+            sqlSelectColumns(tableInfo, false),
+            tableInfo.getTableName(), tableInfo.getKeyColumn(), tableInfo.getKeyProperty(),
+            tableInfo.getLogicDeleteSql(true, true)), Object.class);
+        return this.addSelectMappedStatementForTable(mapperClass, getMethod(sqlMethod), sqlSource, tableInfo);
+    }
+}
+```
