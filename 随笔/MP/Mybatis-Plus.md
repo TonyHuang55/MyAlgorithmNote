@@ -316,3 +316,37 @@ public class SelectById extends AbstractMethod {
     }
 }
 ```
+
+## 配置
+### 基本配置
+#### configLocation
+MyBatis 配置文件的位置，如果有单独的 MyBatis 配置，需要将其路径配置到 configLocation 中。
+
+* Spring Boot
+   ```
+   mybatis-plus.config-location = classpath:mybatis-config.xml
+   ```
+* Spring MVC
+   ```
+   <bean id="sqlSessionFactory"
+   class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+       <property name="configLocation" value="classpath:mybatis-config.xml"/>
+   </bean>
+   ```
+
+#### mapperLocations
+MyBatis Mapper 所对应的 xml 文件位置，如果在 Mapper 中有自定义方法 (xml 中有自定义实现)，需要进行该配置，告诉 Mapper 所对应的 xml 文件位置。
+
+* Spring Boot
+   ```
+   mybatis-plus.mapper-locations = classpath*:mybatis/*.xml
+   ```
+* Spring MVC
+   ```
+   <bean id="sqlSessionFactory"
+   class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+       <property name="mapperLocations" value="classpath*:mybatis/*.xml"/>
+   </bean>
+   ```
+
+> Maven 多模块项目的扫描路径需以 ``classpath*:`` 开头。(即加载多个 jar 包下的 xml 文件)
