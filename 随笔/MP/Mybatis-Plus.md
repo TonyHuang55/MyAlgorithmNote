@@ -350,3 +350,18 @@ MyBatis Mapper 所对应的 xml 文件位置，如果在 Mapper 中有自定义�
    ```
 
 > Maven 多模块项目的扫描路径需以 ``classpath*:`` 开头。(即加载多个 jar 包下的 xml 文件)
+
+#### typeAliasesPackage
+MyBatis 别名包扫描路径，通过该属性可以给包中的类注册别名，注册后在 Mapper 对应的 xml 文件中可以直接使用类名，而不用使用全限定的类名 (即 xml 中调用的时候不用包含包名)
+
+* Spring Boot
+   ```
+   mybatis-plus.type-aliases-package = test.pojo
+   ```
+* Spring MVC
+   ```
+   <bean id="sqlSessionFactory"
+   class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+       <property name="typeAliasesPackage" value="com.baomidou.mybatisplus.samples.quickstart.entity"/>
+   </bean>
+   ```
