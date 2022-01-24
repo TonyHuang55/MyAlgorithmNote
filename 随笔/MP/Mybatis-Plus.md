@@ -365,3 +365,22 @@ MyBatis 别名包扫描路径，通过该属性可以给包中的类注册别名
        <property name="typeAliasesPackage" value="com.baomidou.mybatisplus.samples.quickstart.entity"/>
    </bean>
    ```
+
+### 进阶配置
+#### mapUnderscoreToCamelCase
+* 类型： ``boolean``
+* 默认值： ``true``
+
+是否开启自动驼峰命名规则 (camel case) 映射，即从经典数据库列名 A_COLUMN (下划线命名) 到经典 Java 属性名 aColumn (驼峰命名) 的类似映射
+
+> 注意：
+>   
+> 该属性在 MyBatis 中原默认值为 false，在 MyBatis-Plus 中，此属性也将用于生成最终的 SQL 的select body
+> 
+> 如果数据库命名规则符合规范则无需使用 ``@TableField`` 注解指定数据库字段名
+
+* Spring Boot
+   ```
+   # 关闭自动驼峰映射，该参数不能和 mybatis-plus.config-location 同时存在
+   mybatis-plus.configuration.map-underscore-to-camel-case = false
+   ```
