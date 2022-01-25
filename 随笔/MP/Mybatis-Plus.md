@@ -384,3 +384,41 @@ MyBatis 别名包扫描路径，通过该属性可以给包中的类注册别名
    # 关闭自动驼峰映射，该参数不能和 mybatis-plus.config-location 同时存在
    mybatis-plus.configuration.map-underscore-to-camel-case = false
    ```
+
+#### cacheEnable
+* 类型： ``boolean``
+* 默认值： ``true``
+
+全局第开启或关闭配置文件中的所有映射器已经配置的任何缓存，默认为 true
+
+* Spring Boot
+   ```
+   mybatis-plus.configuration.cache-enable = false
+   ```
+
+### DB 策略配置
+#### idType
+* 类型： ``com.baomidou.mybatisplus.annotation.IdType``
+* 默认值： ``ID_WORKER``
+
+全局默认主键类型，设置后，即可省略实体对象中的 ``@TableId(type=IdType.AUTO)`` 配置
+
+* Spring Boot
+   ```
+   mybatis-plus.global-config.db-config.id-type = auto
+   ```
+* Spring MVC
+   ```
+   <bean id="sqlSessionFactory"
+   class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+       <property name="globalConfig">
+           <bean class="com.baomidou.mybatisplus.core.config.GlobalConfig">
+               <property name="dbConfig">
+                   <bean class="com.baomidou.mybatisplus.core.config.GlobalConfig$DbConfig">
+                       <property name="idType" value="AUTO"/>
+                   </bean>
+               </property>
+           </bean>
+       </property>
+   </bean>
+   ```
