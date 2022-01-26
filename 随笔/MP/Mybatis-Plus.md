@@ -422,3 +422,29 @@ MyBatis 别名包扫描路径，通过该属性可以给包中的类注册别名
        </property>
    </bean>
    ```
+
+#### tablePrefix
+* 类型： ``String``
+* 默认值： ``null``
+
+表名前缀，全局配置后可省略 ``@TableName()`` 配置
+
+* Spring Boot
+   ```
+   mybatis-plus.global-config.db-config.table-prefix = test_
+   ```
+* Spring MVC
+   ```
+   <bean id="sqlSessionFactory"
+   class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+       <property name="globalConfig">
+           <bean class="com.baomidou.mybatisplus.core.config.GlobalConfig">
+               <property name="dbConfig">
+                   <bean class="com.baomidou.mybatisplus.core.config.GlobalConfig$DbConfig">
+                       <property name="tablePrefix" value="test_"/>
+                   </bean>
+               </property>
+           </bean>
+       </property>
+   </bean>
+   ```
