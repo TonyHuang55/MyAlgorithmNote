@@ -448,3 +448,21 @@ MyBatis 别名包扫描路径，通过该属性可以给包中的类注册别名
        </property>
    </bean>
    ```
+
+## 条件构造器
+### allEq
+#### 说明
+```java
+allEq(Map<R, V> params)
+
+allEq(Map<R, V> params, boolean null2IsNull)
+
+allEq(boolean condition, Map<R, V> params, boolean null2IsNull)
+```
+
+* 全部 eq (或个别 isNull)
+
+> 个别参数说明：  
+> ``params``:``key`` 为数据库字段名，``value`` 为字段值  
+> ``null2IsNull``:为 ``true`` 则在 ``map`` 的 ``value`` 为 ``null`` 时调用 isNull 方法，为 ``false`` 时则忽略 ``value`` 为 ``null`` 
+
