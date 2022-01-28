@@ -466,3 +466,17 @@ allEq(boolean condition, Map<R, V> params, boolean null2IsNull)
 > ``params``:``key`` 为数据库字段名，``value`` 为字段值  
 > ``null2IsNull``:为 ``true`` 则在 ``map`` 的 ``value`` 为 ``null`` 时调用 isNull 方法，为 ``false`` 时则忽略 ``value`` 为 ``null`` 
 
+#### 基本比较操作
+
+|关键字|含义|
+|:---|---|
+|eq|等于 =|
+|ne|不等于 <>|
+|gt|大于 >|
+|ge|大于等于 >=|
+|lt|小于 <|
+|le|小于等于 <=|
+|between|BETWEEN val1 AND val2|
+|notBetween|NOT BETWEEN val1 AND val2|
+|in|col IN (val1,val2...)|
+|notIn|col NOT IN (val1,val2...)|
