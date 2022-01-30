@@ -480,3 +480,12 @@ allEq(boolean condition, Map<R, V> params, boolean null2IsNull)
 |notBetween|NOT BETWEEN val1 AND val2|
 |in|col IN (val1,val2...)|
 |notIn|col NOT IN (val1,val2...)|
+
+#### 模糊查询
+
+|关键字|含义|
+|:---|---|
+|like|LIKE '%val%'|
+|notLike|NOT LIKE '%val%'|
+|likeLeft|LIKE '%val'|
+|likeRight|LIKE 'val%'|
