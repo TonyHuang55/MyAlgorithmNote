@@ -489,3 +489,21 @@ allEq(boolean condition, Map<R, V> params, boolean null2IsNull)
 |notLike|NOT LIKE '%val%'|
 |likeLeft|LIKE '%val'|
 |likeRight|LIKE 'val%'|
+
+#### 排序
+|关键字|含义|
+|:---|---|
+|orderBy|ORDER BY|
+|orderByAsc|ORDER BY col... ASC|
+|orderByDesc|ORDER BY col... DESC|
+
+#### 逻辑查询
+* or
+    * 拼接 OR
+    * 主动调用 ``or`` 表示紧接着下一个方法不是用 ``and`` 连接 (不调用 ``or`` 则默认为使用 ``and`` 连接)
+* and
+    * AND 嵌套
+    * 例：``and(i -> i.eq("name","targetName").ne("status",1)`` --> ``and(name = 'targetName' and status <> 1)``
+
+#### select
+通过在 ``wrapper`` 后链式调用 ``.select(col1,col2...)`` 方法可以指定要查询的条目而非 ``select *``
